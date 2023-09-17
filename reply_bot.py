@@ -1,32 +1,45 @@
 import praw
-import pdb
-import re
-import os
+from PyDictionary import PyDictionary
+import enchant
 
-reddit = praw.Reddit("koachgg")
+# reddit = praw.Reddit("koachgg")
+#
+# #reddit.login(REDDIT_USERNAME, REDDIT_PASS)
 
-#reddit.login(REDDIT_USERNAME, REDDIT_PASS)
+reddit = praw.Reddit(
+    client_id= "UVGE-yneC4-_ALY7tutc2A",
+    client_secret="mJwu7Q7knbrzn5jyucdLESwlmfwx-Q",
+    username = "Acceptable_Till_600",
+    password = "redditbot",
+    user_agent="Acceptable_Till_600"
+)
 
-if not os.path.isfile('post_replied_to.txt'):
-    post_replied_to = []
+dictionary = PyDictionary()
+d = enchant.Dict("en_US")
 
-else:
-    with opem("post_replied_to.txt","r") as f:
-        post_replied_to = f.read()
-        post_replied_to = post_replied_to.split("\n")
-        post_replied_to = list(filter(None,post_replied_to))
+# check if the word is real
+def isWord(word):
+    return d.check(word)
 
-    subreddit = reddit.subreddit("'pythonforengineers")
-    for submission in subreddit.hot(limit=5):
-        if submission not in post_replied_to:
-            if re.search('i love python',submission.title,re.IGNORECASE):
-                submission.reply("koachgg bot says: It's all about the credit (and Python)")
-                print("Bot replying to : ", submission.title)
+subreddit = reddit.subreddit('words')
 
-                posts_replied_to.append(submission.id)
+# phrase to activate the bot
+keyphrase = '!actbot'
 
-
-
-    with open("posts_replied_to.txt", "w") as f:
-         for post_id in posts_replied_to:
-             f.write(post_id + "\n")
+# look for phrase and reply appropriately
+for comment in subreddit.stream.comments():
+    if keyphrase in comment.body:
+        word = comment.body.replace(keyphrase, '')
+        try:
+            if isWord(word):
+                # get meaning as object, get the index of a sentence and reply it
+                words = dictionary.meaning(word)
+                reply = [item[0] for item in words.values()]
+                comment.reply(word + ': '  + reply[0])
+                print('posted')
+            else:
+                reply = 'This is not a word.'
+                comment.reply(reply)
+                print('posted')
+        except:
+            print('to frequent')
